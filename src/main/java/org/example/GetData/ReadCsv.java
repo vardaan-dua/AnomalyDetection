@@ -18,29 +18,39 @@ public class ReadCsv {
             Workbook workbook = new XSSFWorkbook(file);
             Sheet sheet = workbook.getSheetAt(0);
             int i = 0;
+            boolean isFirstRow =true;
             for (Row row : sheet) {
-                int count  =0 ;
-                for(Cell cell : row){count++;}
-                if(count != 3)continue;
-                String[] cur = new String[3];
-                int pos =0;
-                for (Cell cell : row) {
-                    switch (cell.getCellType()) {
-                        case STRING:{ cur[pos++]=(cell.getRichStringCellValue().getString()); break;}
-                        case NUMERIC: {
-                            if (DateUtil.isCellDateFormatted(cell)) {
-                                cur[pos++]=(cell.getDateCellValue() + "");
-                            } else {
-                                cur[pos++]=(cell.getNumericCellValue() + "");
-                            }
-                            break;
-                        }
-                        default :
-                            System.out.println("gadbad\n");
+                if(!isFirstRow) {
+                    int count = 0;
+                    for (Cell cell : row) {
+                        count++;
                     }
+                    if (count != 3) continue;
+                    String[] cur = new String[3];
+                    int pos = 0;
+                    for (Cell cell : row) {
+                        switch (cell.getCellType()) {
+                            case STRING: {
+                                cur[pos++] = (cell.getRichStringCellValue().getString());
+                                break;
+                            }
+                            case NUMERIC: {
+                                if (DateUtil.isCellDateFormatted(cell)) {
+                                    cur[pos++] = (cell.getDateCellValue() + "");
+                                } else {
+                                    cur[pos++] = (cell.getNumericCellValue() + "");
+                                }
+                                break;
+                            }
+                            default:
+                                System.out.println("gadbad\n");
+                        }
+                    }
+                    data.add(cur);
+                    i++;
                 }
-                data.add(cur);
-                i++;
+                else isFirstRow = false;
+
             }
             return data;
         }
