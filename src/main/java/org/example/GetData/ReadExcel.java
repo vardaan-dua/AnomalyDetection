@@ -6,18 +6,18 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
 import java.util.*;
 
-public class ReadCsv {
+public class ReadExcel {
     private static String formatDouble(double value, int decimalPlaces) {
         return String.format("%." + decimalPlaces + "f", value);
     }
-    public static List<String[]> getData (String path ) {
+    public static List<String[]> getData (String path , int keepRowsWithTheseNumberOfCells) {
 
         List<String[]> data = new ArrayList<>();
         try {
             FileInputStream file = new FileInputStream(new File(path));
             Workbook workbook = new XSSFWorkbook(file);
             Sheet sheet = workbook.getSheetAt(0);
-            int i = 0;
+            int rowNumber = 0;
             boolean isFirstRow =true;
             for (Row row : sheet) {
                 if(!isFirstRow) {
@@ -25,8 +25,8 @@ public class ReadCsv {
                     for (Cell cell : row) {
                         count++;
                     }
-                    if (count != 3) continue;
-                    String[] cur = new String[3];
+                    if (count != keepRowsWithTheseNumberOfCells) continue;
+                    String[] cur = new String[keepRowsWithTheseNumberOfCells];
                     int pos = 0;
                     for (Cell cell : row) {
                         switch (cell.getCellType()) {
@@ -47,7 +47,7 @@ public class ReadCsv {
                         }
                     }
                     data.add(cur);
-                    i++;
+                    rowNumber++;
                 }
                 else isFirstRow = false;
 
@@ -59,40 +59,5 @@ public class ReadCsv {
             System.out.println("fat gaya");
             return data;
         }
-//        try (Workbook workbook = WorkbookFactory.create(new FileInputStream(path))) {
-//            Sheet sheet = workbook.getSheetAt(0); // Assuming you are reading from the first sheet
-//
-//            Iterator<Row> rowIterator = sheet.iterator();
-//            while (rowIterator.hasNext()) {
-//                Row row = rowIterator.next();
-//                Iterator<Cell> cellIterator = row.cellIterator();
-//
-//                List<String> rowData = new ArrayList<>();
-//                while (cellIterator.hasNext()) {
-//                    Cell cell = cellIterator.next();
-//                    switch (cell.getCellType()) {
-//                        case STRING:
-//                            rowData.add(cell.getStringCellValue());
-//                            break;
-//                        case NUMERIC:
-//                            rowData.add(String.valueOf(cell.getNumericCellValue()));
-//                            break;
-//                        case BOOLEAN:
-//                            rowData.add(String.valueOf(cell.getBooleanCellValue()));
-//                            break;
-//                        case BLANK:
-//                            rowData.add(""); // Handle blank cells
-//                            break;
-//                        default:
-//                            // Handle other cell types if needed
-//                            rowData.add(""); // Or throw an exception
-//                            break;
-//                    }
-//                }
-//                rows.add(rowData.toArray(new String[0]));
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
     }
 }

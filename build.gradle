@@ -19,6 +19,8 @@ dependencies {
     implementation 'org.jxls:jxls-jexcel:1.0.9'
     implementation 'org.dhatim:fastexcel-reader:0.17.0'
     implementation 'org.dhatim:fastexcel:0.17.0'
+    implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+
 }
 
 test {

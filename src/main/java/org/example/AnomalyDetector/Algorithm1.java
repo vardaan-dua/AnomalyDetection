@@ -1,7 +1,6 @@
 package org.example.AnomalyDetector;
 
-import org.example.Filter.Filters;
-import org.example.GetData.ReadCsv;
+import org.example.GetData.ReadExcel;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -62,7 +61,7 @@ public class Algorithm1 {
     }
     public static void Algo1 (String dataPath) throws ParseException {
         String filePath = dataPath;
-        List<String[]> data = ReadCsv.getData(filePath);
+        List<String[]> data = ReadExcel.getData(filePath,3);
         System.out.println(data.size());
         List<Integer> messageCount = new ArrayList<>();
         List<String> bucketStartTimes = new ArrayList<>();

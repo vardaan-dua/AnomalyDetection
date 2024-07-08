@@ -1,70 +1,17 @@
-# import pandas as pd
-# import numpy as np
-# from sklearn.cluster import KMeans
-# from sklearn.preprocessing import StandardScaler, LabelEncoder
-#
-# def load_data(file_path):
-#     # Read the Excel file
-#     df = pd.read_excel(file_path, usecols=[0, 1, 2, 3])
-#
-#     # Ensure the column names match your Excel file
-#     df.columns = ['timestamp', 'source', 'api_call_time', 'cpu_time']
-#
-#     # Parse timestamps to datetime
-#     df['timestamp'] = pd.to_datetime(df['timestamp'])
-#
-#     # Convert timestamps to integers
-#     df['timestamp'] = df['timestamp'].view(np.int64)
-#
-#     # Normalize timestamps using standard scaling
-#     scaler = StandardScaler()
-#     df['timestamp'] = scaler.fit_transform(df['timestamp'].values.reshape(-1, 1))
-#
-#     # Encode sources as categorical
-#     source_encoder = LabelEncoder()
-#     df['source'] = source_encoder.fit_transform(df['source'])
-#
-#     return df
-#
-# def main():
-#     file_path = "/Users/vardaan.dua/Downloads/All-Messages-Search-Result (2).xlsx"
-#
-#     try:
-#         # Load data
-#         data = load_data(file_path)
-#
-#         # Extract features for clustering
-#         features = data[['timestamp', 'source', 'api_call_time', 'cpu_time']].values
-#
-#         # Perform KMeans clustering
-#
-#         num_clusters = 3  # Adjust as needed
-#         kmeans = KMeans(n_clusters=num_clusters, random_state=0)
-#         kmeans.fit(features)
-#
-#         # Get cluster centroids
-#         centroids = kmeans.cluster_centers_
-#
-#         # Print centroids
-#         print("Centroids:")
-#         print(centroids)
-#
-#     except Exception as e:
-#         print(f"Failed to load and process data: {str(e)}")
-#
-# if __name__ == "__main__":
-#     main()
-
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, LabelEncoder
-from sklearn.metrics import silhouette_score
-from nltk.corpus import stopwords
 import nltk
 import re
 from sklearn.preprocessing import normalize
 from sklearn.feature_extraction.text import TfidfVectorizer
+from collections import Counter
+from nltk.corpus import words
+import argparse
+# import pymongo
+
+# nltk.download('words')
+eng_words = set(words.words())
 
 def clean_text(text):
     # Remove punctuation and special characters
@@ -72,87 +19,95 @@ def clean_text(text):
     # Convert text to lowercase
     text = text.lower()
     text = text.strip()
-    return text
+    words = text.split()
+    # Remove non-dictionary words
+    words = [word for word in words if word in eng_words or len(word)>3]
+    return ' '.join(words)
 
-def load_data(file_path):
+
+def load_data(file_path , min_time , max_time):
     # Read the Excel file
-    df = pd.read_excel(file_path, usecols=[2] , nrows=100)
-
+    df = pd.read_excel(file_path, usecols=[0,2],nrows=100000)
     # Ensure the column names match your Excel file
-    df.columns = ['message']
+    df.columns = ['timestamp','message']
+    
+    df['timestamp_col'] = df['timestamp'].apply(lambda x: re.search(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z', x).group() if re.search(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z', x) else None)    
+    
+    df['timestamp_col'] = pd.to_datetime(df['timestamp_col'], format='%Y-%m-%dT%H:%M:%S.%fZ')
+    
+    min_time = pd.to_datetime(min_time,format='%Y-%m-%dT%H:%M:%S.%fZ')
+    
+    max_time = pd.to_datetime(max_time,format='%Y-%m-%dT%H:%M:%S.%fZ')
+        
+    df = df[(df['timestamp_col']>=min_time) & (df['timestamp_col']<=max_time)]    
     
     df['cleaned_message'] = df['message'].apply(clean_text) 
-        
+    
     return df
 
-def print_cluster_elements(df, cluster_number):
-    cluster_data = df[df['Cluster'] == cluster_number]
-    
-    if cluster_data.empty:
-        print(f"No elements found in Cluster {cluster_number}.")
-    else:
-        print(f"Elements in Cluster {cluster_number}:")
-        for idx, row in cluster_data.iterrows():
-            print(f"- {row['message']}")
-# /Users/vardaan.dua/desktop/AnomalyDetection/myenv/bin/python3
-def main():
-    file_path = "/Users/vardaan.dua/Downloads/All-Messages-Search-Result(3).xlsx"
-
+def main(begin_time, end_time):
+    file_path = "/Users/vardaan.dua/Downloads/All-Messages-Search-Result (6).xlsx"
     try:
         # Load data
-        print("loader mein ghus gya")
-        data = load_data(file_path)
+        beginTimeStamp = begin_time
+        endTimeStamp = end_time
+        data = load_data(file_path,beginTimeStamp,endTimeStamp)
 
         vectorizer = TfidfVectorizer(stop_words='english')
     
-        # Fit and transform the cleaned messages
         tfidf_matrix = vectorizer.fit_transform(data['cleaned_message'])
     
         tfidf_matrix_normalized = normalize(tfidf_matrix)
+
         num_clusters = min(int(data.size/20),200)
+
         kmeans = KMeans(n_clusters=num_clusters, random_state=42)
 
         kmeans.fit(tfidf_matrix_normalized)
 
-        # Adding cluster labels to the DataFrame
         data['Cluster'] = kmeans.labels_
 
-        # Output
         data.to_excel('clusters.xlsx', index=False)
-        # print(data[['message', 'cleaned_message', 'Cluster']])
-        # # Extract features for clustering
-        # features = data[['message']].values
 
-        # # Determine the optimal number of clusters
-        # num_clusters = 10
-
-        # # Perform KMeans clustering with custom distance metric
-        # kmeans = KMeans(n_clusters=num_clusters, random_state=0)
-        # kmeans.fit(features)
-
-
-        # # Get cluster centroids
-        # centroids = kmeans.cluster_centers_
-
-        # # Assign clusters based on the custom distance matrix
-        # cluster_labels = np.argmin(distance_matrix, axis=1)
-
-        # # Get cluster centroids
-        # centroids = kmeans.cluster_centers_
-
-        # # Add cluster labels to the data
-        # data['cluster'] = cluster_labels
-
-        # # Save the data with cluster labels to a new CSV file
-        # data.to_excel("/Users/vardaan.dua/Desktop/AnomalyDetection/src/main/clusters.xlsx", index=False)
+        representative_messages = []
+        for cluster_num in range(num_clusters):
+            cluster_data = data[data['Cluster'] == cluster_num]
+            if not cluster_data.empty:
+                most_common_message = Counter(cluster_data['cleaned_message']).most_common(1)[0]
+                representative_messages.append({
+                'Cluster': cluster_num,
+                'Representative Message': most_common_message[0],
+                'Count': most_common_message[1]
+                })
 
 
-        # # Print centroids
-        # print("Centroids:")
-        # print(centroids)
+        # connection_string = "mongodb+srv://admin:admin@cluster0.os2lm19.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+       
+        # client = pymongo.MongoClient(connection_string)
+      
+        # db = client.representative_messages
+      
+        # collection = db.representative_messages
+      
+        representative_df = pd.DataFrame(representative_messages)
+      
+        representative_df = representative_df.sort_values(by='Count', ascending=False)
+        
+        for index, row in representative_df.iterrows():
+             message_dict = {"Cluster": row['Cluster'],"Representative Message": row['Representative Message'],"Count": row['Count']}
+            #  collection.insert_one(message_dict)
+        
+        representative_df.to_excel('representative_messages.xlsx',index=False)
 
     except Exception as e:
         print(f"Failed to load and process data: {str(e)}")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("begin_time") #help="Begin timestamp in the format yyyy-MM-ddTHH:mm:ss.SSSZ")
+    parser.add_argument("end_time") #help="End timestamp in the format yyyy-MM-ddTHH:mm:ss.SSSZ")
+    args = parser.parse_args()
+    # print(args.begin_time)
+    # print(args.end_time)
+    main(args.begin_time, args.end_time)
+
