@@ -3,15 +3,13 @@ package org.example.AnomalyDetector;
 import org.example.Filter.Filters;
 import org.example.GetData.ReadExcel;
 import org.example.ML.Clustering;
-import org.example.PathEditing;
+import org.example.CommonFunctions;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static org.example.Filter.Filters.filterOnTimeStamp;
+import static org.example.CommonFunctions.addMinutes;
 
 public class AnomalyDetection {
     final static String[] regex = {
@@ -34,13 +32,6 @@ public class AnomalyDetection {
             "alert",
             "fatal"
     };
-    public static String addMinutes(String date,int min) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-        String dateWithoutZ = date.substring(0, date.length() - 1);
-        LocalDateTime dateTime = LocalDateTime.parse(dateWithoutZ, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS"));
-        LocalDateTime newDateTime = dateTime.plusMinutes(min);
-        return newDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")) + "Z";
-    }
     public static void main(String[] Args) {
         String beginningPath = "/Users/vardaan.dua/Downloads/";
         TreeMap<String,String> statPath = new TreeMap<>();
@@ -53,17 +44,18 @@ public class AnomalyDetection {
         java.net.URL url = clazz.getResource(clazz.getSimpleName() + ".class");
         String path = url.getPath();
         System.out.println(path);
-        String resultPath = PathEditing.extractPath(path, 8) + "/AnomalyDetectionResults/AnomalyDetectionResult.txt";
+        String resultPath = CommonFunctions.extractPath(path, 8) + "/AnomalyDetectionResults/AnomalyDetectionResult.txt";
         System.out.println(resultPath);
         List<String[]> logs =ReadExcel.getData("/Users/vardaan.dua/downloads/All-Messages-search-result (6).xlsx",4);
 //        Pattern[] patterns = getPatterns(regex);
+//        List<String> result ;
         for (String time : times) {
             String rangeBegin = time;
-            String rangeEnd = addMinutes(time,10);
+            String rangeEnd = CommonFunctions.addMinutes(time,10);
             BufferedWriter bfw= null;
             try {
                     Clustering.createCluster(rangeBegin, rangeEnd);
-                    String readFrom = PathEditing.extractPath(path,8)+"/representative_messages.xlsx";
+                    String readFrom = CommonFunctions.extractPath(path,8)+"/representative_messages.xlsx";
                     List<String[]> clusteringData = ReadExcel.getData(readFrom,3);
                     System.out.println(clusteringData.size());
                     bfw = new BufferedWriter(new FileWriter(resultPath,true));
@@ -94,6 +86,7 @@ public class AnomalyDetection {
                         bfw.newLine();
                         bfw.write("Pattern: " + entry.getKey());
                         bfw.newLine();
+                        if(entry.getValue().isEmpty())continue;
                         for (String log : entry.getValue()) {
                             bfw.write(log);
                             bfw.newLine();

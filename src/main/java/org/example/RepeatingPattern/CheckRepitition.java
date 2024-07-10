@@ -2,7 +2,7 @@ package org.example.RepeatingPattern;
 
 import org.example.GetData.ReadExcel;
 import org.example.ML.Clustering;
-import org.example.PathEditing;
+import org.example.CommonFunctions;
 
 import java.util.List;
 
@@ -14,7 +14,7 @@ public class CheckRepitition {
     public static String getTheMostOccuringPattern(String beginTimeStamp , String endTimeStamp) {
         try {
               Clustering.createCluster(beginTimeStamp,endTimeStamp);
-              String representative = PathEditing.extractPath(path,8)+"/representative_messages.xlsx";
+              String representative = CommonFunctions.extractPath(path,8)+"/representative_messages.xlsx";
               return (ReadExcel.getData(representative,3).get(0))[1];
         } catch (Exception e) {
             return "(Not a repeating pattern) Error Message : No Pattern Found Matching these constraints";
@@ -23,7 +23,7 @@ public class CheckRepitition {
     public static String getTheMostOccuringPattern(String beginTimeStamp , String endTimeStamp , String [] excludePatterns){
         try {
             Clustering.createCluster(beginTimeStamp,endTimeStamp);
-            String representative = PathEditing.extractPath(path,8)+"/representative_messages.xlsx";
+            String representative = CommonFunctions.extractPath(path,8)+"/representative_messages.xlsx";
             List<String[]> commonPatternsSrtedByOccDesc= ReadExcel.getData(representative,3);
             for(int i = 0; i< commonPatternsSrtedByOccDesc.size();++i){
                 boolean isUseful = true ;

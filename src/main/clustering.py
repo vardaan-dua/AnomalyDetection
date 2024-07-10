@@ -8,6 +8,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from collections import Counter
 from nltk.corpus import words
 import argparse
+import os
+
 # import pymongo
 
 # nltk.download('words')
@@ -25,9 +27,9 @@ def clean_text(text):
     return ' '.join(words)
 
 
-def load_data(file_path , min_time , max_time):
+def load_data(file_path, min_time , max_time):
     # Read the Excel file
-    df = pd.read_excel(file_path, usecols=[0,2],nrows=100000)
+    df = pd.read_excel(file_path, usecols=[0,2])
     # Ensure the column names match your Excel file
     df.columns = ['timestamp','message']
     
@@ -52,7 +54,7 @@ def main(begin_time, end_time):
         beginTimeStamp = begin_time
         endTimeStamp = end_time
         data = load_data(file_path,beginTimeStamp,endTimeStamp)
-
+        
         vectorizer = TfidfVectorizer(stop_words='english')
     
         tfidf_matrix = vectorizer.fit_transform(data['cleaned_message'])
@@ -79,7 +81,6 @@ def main(begin_time, end_time):
                 'Representative Message': most_common_message[0],
                 'Count': most_common_message[1]
                 })
-
 
         # connection_string = "mongodb+srv://admin:admin@cluster0.os2lm19.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
        
