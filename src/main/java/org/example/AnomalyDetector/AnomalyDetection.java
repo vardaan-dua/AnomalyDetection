@@ -4,12 +4,14 @@ import org.example.Filter.Filters;
 import org.example.GetData.ReadExcel;
 import org.example.ML.Clustering;
 import org.example.CommonFunctions;
-import java.io.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
 
-import static org.example.CommonFunctions.addMinutes;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.*;
+
+import org.example.Constants;
 
 public class AnomalyDetection {
     final static String[] regex = {
@@ -19,7 +21,7 @@ public class AnomalyDetection {
             "SprinklrRuntimeException",
             "IllegalArguementException",
             "GoogleJsonResponseException",
-            "LinkedInRecoverableExcpetion",
+            "LinkedInRecoverableException",
             "FacebookAPIException",
             "java.lang.RuntimeException",
             "java.lang.NullPointerException",
@@ -30,84 +32,123 @@ public class AnomalyDetection {
             "error",
             "fail",
             "alert",
-            "fatal"
+            "fatal",
+            "emergency"
     };
-    public static void main(String[] Args) {
-        String beginningPath = "/Users/vardaan.dua/Downloads/";
-        TreeMap<String,String> statPath = new TreeMap<>();
-        statPath.put("POD_CPU_USAGE","Pod CPU .xlsx");
-        statPath.put("POD_MEMORY_USAGE","Pod Memory.xlsx");
-        statPath.put("TOMCAT_THREADS","Tomcat Threads.xlsx");
-        statPath.put("GRPC_THREADS","Grpc threads used.xlsx");
-        List<String> times = AnomalousTimeRangeDetector.getAnomalousTimeRanges(beginningPath,statPath);
-        Class<?> clazz = AnomalyDetection.class;
-        java.net.URL url = clazz.getResource(clazz.getSimpleName() + ".class");
-        String path = url.getPath();
-        System.out.println(path);
-        String resultPath = CommonFunctions.extractPath(path, 8) + "/AnomalyDetectionResults/AnomalyDetectionResult.txt";
-        System.out.println(resultPath);
-        List<String[]> logs =ReadExcel.getData("/Users/vardaan.dua/downloads/All-Messages-search-result (6).xlsx",4);
-//        Pattern[] patterns = getPatterns(regex);
-//        List<String> result ;
-        for (String time : times) {
-            String rangeBegin = time;
-            String rangeEnd = CommonFunctions.addMinutes(time,10);
-            BufferedWriter bfw= null;
-            try {
-                    Clustering.createCluster(rangeBegin, rangeEnd);
-                    String readFrom = CommonFunctions.extractPath(path,8)+"/representative_messages.xlsx";
-                    List<String[]> clusteringData = ReadExcel.getData(readFrom,3);
-                    System.out.println(clusteringData.size());
-                    bfw = new BufferedWriter(new FileWriter(resultPath,true));
-                    bfw.newLine();
-                    bfw.write("Patterns for "+rangeBegin+" "+rangeEnd+"\n");
-                    int count =20;
-                    for(String[] str : clusteringData){
-                        for(int i =1 ;i<str.length;++i){
-                            bfw.write(str[i]+" ");
-                        }
-                        bfw.newLine();
-                        count--;
-                        if(count == 0)break;
-                    }
-                    List<String[]> logsInGivenTime = Filters.filterOnTimeStamp(logs,rangeBegin,rangeEnd);
-                    HashMap<String, HashSet<String>> pattern_Logs = new HashMap<>();
-                    for(String reg : regex)
-                        pattern_Logs.put(reg,new HashSet<>());
-                    System.out.println(logsInGivenTime.size());
-                    for(String[] row : logsInGivenTime){
-                        for(int i =0 ;i<regex.length;++i) {
-                            if((row[2].toLowerCase()).contains(regex[i].toLowerCase())){
-                                pattern_Logs.get(regex[i]).add(row[2]);
-                            }
-                        }
-                    }
-                    for (Map.Entry<String, HashSet<String>> entry : pattern_Logs.entrySet()) {
-                        bfw.newLine();
-                        bfw.write("Pattern: " + entry.getKey());
-                        bfw.newLine();
-                        if(entry.getValue().isEmpty())continue;
-                        for (String log : entry.getValue()) {
-                            bfw.write(log);
-                            bfw.newLine();
-                        }
-                        bfw.newLine(); // Separate each pattern block with a blank line
-                    }
+
+    public static List<String> anomDetect(String timeRangeBegin, String tempPath) {
+        List<String[]> logs = ReadExcel.getData(Constants.logsFromGrayLog, 4);
+        List<String> result = new ArrayList<>();
+        String timeRangeEnd = CommonFunctions.addMinutes(timeRangeBegin, 10);
+        try {
+            Clustering.createCluster(tempPath, timeRangeBegin, timeRangeEnd);
+            List<String[]> clusteringData = ReadExcel.getData(tempPath, 3);
+            System.out.println(clusteringData.size());
+            result.add("\n");
+            result.add("Patterns for " + timeRangeBegin + " " + timeRangeEnd + "\n");
+            int count = 20;
+            for (String[] str : clusteringData) {
+                result.add(str[1] + " appeared " + str[2] + " times\n");
+                count--;
+                if (count == 0) break;
             }
-            catch (Exception e){
-                System.out.println("couldn't cluster the data");
-            }
-            finally {
-                if (bfw != null) {
-                    try {
-                        bfw.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
+            List<String[]> logsInGivenTime = Filters.filterOnTimeStamp(logs, timeRangeBegin, timeRangeEnd);
+            HashMap<String, HashSet<String>> pattern_Logs = new HashMap<>();
+            for (String reg : regex)
+                pattern_Logs.put(reg, new HashSet<>());
+            System.out.println(logsInGivenTime.size());
+            for (String[] row : logsInGivenTime) {
+                for (int i = 0; i < regex.length; ++i) {
+                    if ((row[2].toLowerCase()).contains(regex[i].toLowerCase())) {
+                        pattern_Logs.get(regex[i]).add(row[2]);
                     }
                 }
             }
-            System.out.println(rangeBegin);
-            System.out.println(rangeEnd);
+            for (Map.Entry<String, HashSet<String>> entry : pattern_Logs.entrySet()) {
+                if (entry.getValue().isEmpty()) continue;
+                result.add("\n");
+                result.add("Logs Matching to the Pattern: " + entry.getKey() + "\n");
+                for (String log : entry.getValue()) {
+                    result.add(log + "\n");
+                }
+                result.add("\n");
+            }
+        } catch (Exception e) {
+            System.out.println("couldn't cluster the data");
         }
+        System.out.println(timeRangeBegin);
+        System.out.println(timeRangeEnd);
+        return result;
+    }
+
+    public static String getAnomalyDetectionResultsFilePath(String beginTimeStamp, String endTimeStamp)  {
+//        String beginTimeStamp = "2024-07-05T06:22:26.220Z";
+//        String endTimeStamp = "2024-07-05T20:35:51.900Z";
+        String beginningPath = Constants.folderPathForInfluxStats;
+        TreeMap<String, String> statPath = new TreeMap<>();
+        statPath.put("POD_CPU_USAGE", Constants.podCpuUsageDataPath);
+        statPath.put("POD_MEMORY_USAGE", Constants.podMemoryUsageDataPath);
+        statPath.put("TOMCAT_THREADS", Constants.tomCatThreadsDataPath);
+        statPath.put("GRPC_THREADS", Constants.grpcThreadsDataPath);
+        List<String> times = AnomalousTimeRangeDetector.getAnomalousTimeRanges(beginningPath, statPath, beginTimeStamp, endTimeStamp);
+
+
+        String resultPath = "AnomalyDetectionResults/AnomalyDetectionResult.txt";
+        System.out.println(resultPath);
+        int numberOfCores = Runtime.getRuntime().availableProcessors() / 5;
+        ExecutorService cpuExecutor = Executors.newFixedThreadPool(numberOfCores);
+
+        BlockingQueue<List<String>> resultQueue = new LinkedBlockingQueue<>();
+        ExecutorService resultProcessor = Executors.newSingleThreadExecutor();
+        for (int i = 0; i < times.size(); i++) {
+
+            int taskId = i;
+            cpuExecutor.submit(() -> {
+                String curTempPath = "temp/temp" + taskId + ".xlsx";
+                System.out.println(curTempPath);
+                List<String> curResult = anomDetect(times.get(taskId), curTempPath);
+                resultQueue.offer(curResult);
+                try {
+                    Files.delete(Paths.get(curTempPath));
+                } catch (Exception e) {
+                    System.out.println("deleting temporary files failed");
+                }
+            });
+        }
+        resultProcessor.submit(() -> {
+            int count = times.size();
+            try {
+                while (count > 0) {
+                    List<String> result = resultQueue.take();
+                    try (BufferedWriter bfw = new BufferedWriter(new FileWriter(resultPath, true))) {
+                        bfw.newLine();
+                        for (String str : result) {
+                            bfw.write(str);
+                        }
+                        bfw.newLine();
+                    } catch (IOException e) {
+                        System.out.println("error while writing to the file");
+                    }
+                    count--;
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        cpuExecutor.shutdown();
+        resultProcessor.shutdown();
+        try {
+            cpuExecutor.awaitTermination(30, TimeUnit.MINUTES);
+            resultProcessor.awaitTermination(30, TimeUnit.MINUTES);
+        }
+        catch (InterruptedException e){
+            System.out.println("The file is not yet written and waits for executors were interrupted");
+        }
+        return resultPath;
+    }
+
+    public static void main(String[] Args) {
+//        System.out.println(getAnomalyDetectionResultsFilePath("2024-07-05T06:22:26.220Z","2024-07-05T20:35:51.900Z"));
+        System.out.println(getAnomalyDetectionResultsFilePath("2024-07-05T06:22:26.220Z","2024-07-05T15:38:00.000Z"));
     }
 }

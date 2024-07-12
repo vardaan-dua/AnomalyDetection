@@ -8,13 +8,10 @@ import java.util.List;
 
 
 public class CheckRepitition {
-    static Class<?> clazz = CheckRepitition.class;
-    static java.net.URL url = clazz.getResource(clazz.getSimpleName() + ".class");
-    static String path = url.getPath();
     public static String getTheMostOccuringPattern(String beginTimeStamp , String endTimeStamp) {
         try {
-              Clustering.createCluster(beginTimeStamp,endTimeStamp);
-              String representative = CommonFunctions.extractPath(path,8)+"/representative_messages.xlsx";
+              String representative = "RepeatingPatternResults/representative_messages.xlsx";
+                Clustering.createCluster(representative,beginTimeStamp,endTimeStamp);
               return (ReadExcel.getData(representative,3).get(0))[1];
         } catch (Exception e) {
             return "(Not a repeating pattern) Error Message : No Pattern Found Matching these constraints";
@@ -22,8 +19,8 @@ public class CheckRepitition {
     }
     public static String getTheMostOccuringPattern(String beginTimeStamp , String endTimeStamp , String [] excludePatterns){
         try {
-            Clustering.createCluster(beginTimeStamp,endTimeStamp);
-            String representative = CommonFunctions.extractPath(path,8)+"/representative_messages.xlsx";
+            String representative = "RepeatingPatternResults/representative_messages.xlsx";
+            Clustering.createCluster(representative,beginTimeStamp,endTimeStamp);
             List<String[]> commonPatternsSrtedByOccDesc= ReadExcel.getData(representative,3);
             for(int i = 0; i< commonPatternsSrtedByOccDesc.size();++i){
                 boolean isUseful = true ;

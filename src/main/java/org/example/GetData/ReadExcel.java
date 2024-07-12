@@ -56,7 +56,7 @@ public class ReadExcel {
         }
         catch(Exception e)
         {
-            System.out.println("fat gaya");
+            System.out.println("fat gaya oyeee");
             return data;
         }
     }

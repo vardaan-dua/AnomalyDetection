@@ -47,8 +47,9 @@ def load_data(file_path, min_time , max_time):
     
     return df
 
-def main(begin_time, end_time):
-    file_path = "/Users/vardaan.dua/Downloads/All-Messages-Search-Result (6).xlsx"
+def main(logSourcePath,resultPath,begin_time, end_time):
+    # file_path = "/Users/vardaan.dua/Downloads/All-Messages-Search-Result (6)new.xlsx"
+    file_path = logSourcePath
     try:
         # Load data
         beginTimeStamp = begin_time
@@ -69,7 +70,7 @@ def main(begin_time, end_time):
 
         data['Cluster'] = kmeans.labels_
 
-        data.to_excel('clusters.xlsx', index=False)
+        # data.to_excel('clusters.xlsx', index=False)
 
         representative_messages = []
         for cluster_num in range(num_clusters):
@@ -98,17 +99,20 @@ def main(begin_time, end_time):
              message_dict = {"Cluster": row['Cluster'],"Representative Message": row['Representative Message'],"Count": row['Count']}
             #  collection.insert_one(message_dict)
         
-        representative_df.to_excel('representative_messages.xlsx',index=False)
+        representative_df.to_excel(resultPath,index=False)
 
     except Exception as e:
         print(f"Failed to load and process data: {str(e)}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("logSourcePath")
+    parser.add_argument("resultPath")
     parser.add_argument("begin_time") #help="Begin timestamp in the format yyyy-MM-ddTHH:mm:ss.SSSZ")
     parser.add_argument("end_time") #help="End timestamp in the format yyyy-MM-ddTHH:mm:ss.SSSZ")
     args = parser.parse_args()
+    # print(args.logSourcePath)
     # print(args.begin_time)
     # print(args.end_time)
-    main(args.begin_time, args.end_time)
+    main(args.logSourcePath,args.resultPath,args.begin_time, args.end_time)
 

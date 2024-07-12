@@ -1,6 +1,8 @@
 package org.example.ML;
 
 import org.example.CommonFunctions;
+import org.example.Constants;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
@@ -23,15 +25,11 @@ public class  Clustering{
         }
     }
 
-    public static void createCluster(String beginTimeStamp , String endTimeStamp) throws Exception{
-        Class<?> clazz = Clustering.class;
-        java.net.URL url = clazz.getResource(clazz.getSimpleName() + ".class");
-        String path = url.getPath();
+    public static void createCluster(String resultPath,String beginTimeStamp , String endTimeStamp) throws Exception{
         //ProcessBuilder pb = new ProcessBuilder("/Users/vardaan.dua/Desktop/AnomalyDetection/myenv/bin/python3","/Users/vardaan.dua/Desktop/AnomalyDetection/src/main/clustering.py");;
-        String runner = CommonFunctions.extractPath(path,8)+"/myenv/bin/python3";
-        String param = CommonFunctions.extractPath(path,8)+"/src/main/clustering.py";
-
-        ProcessBuilder pb = new ProcessBuilder(runner,param,beginTimeStamp,endTimeStamp);
+        String runner = "myenv/bin/python3";
+        String param = "src/main/clustering.py";
+        ProcessBuilder pb = new ProcessBuilder(runner,param, Constants.logsFromGrayLog,resultPath,beginTimeStamp,endTimeStamp);
         Process process = pb.start();
         String result = read(process);
         System.out.println(result);
