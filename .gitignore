@@ -1,6 +1,4 @@
-myenv/
-AnomalyDetectionResults/
-RepeatingPatternResults/
+
 HELP.md
 .gradle
 build/
@@ -28,6 +26,9 @@ bin/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+myenv/
+AnomalyDetectionResults/
+RepeatingPatternResults/
 
 ### NetBeans ###
 /nbproject/private/

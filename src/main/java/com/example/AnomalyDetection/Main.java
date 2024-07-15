@@ -29,7 +29,7 @@ public class Main {
 //        System.out.printf("%-20s %-20.10f %-20.10f%n\n","Log Count",vals[0],vals[1]);
 
 
-        System.out.println(CheckRepitition.getTheMostOccuringPattern("2024-07-05T06:30:00.000Z","2024-07-05T06:40:00.000Z"));
+//        System.out.println(CheckRepitition.getTheMostOccuringPattern("2024-07-05T06:30:00.000Z","2024-07-05T06:40:00.000Z"));
         //        TreeMap<String,double[]> checking = StatDiff.getStatDiff("2024-07-05T13:58:00.000Z","2024-07-05T14:06:00.004Z",2,cur);
         //        String[] exclude ={"no available agents to make a call in workqueue"};
 //        System.out.println(CheckRepitition.getTheMostOccuringPattern("2024-06-28T09:17:17.032Z", "2024-06-28T09:19:07.344Z",exclude));

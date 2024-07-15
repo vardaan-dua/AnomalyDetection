@@ -7,10 +7,13 @@ import com.example.AnomalyDetection.Constants;
 import com.example.AnomalyDetection.Filter.Filters;
 import com.example.AnomalyDetection.GetData.ReadExcel;
 import com.example.AnomalyDetection.ML.Clustering;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.SQLOutput;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -83,7 +86,7 @@ public class AnomalyDetection {
         return result;
     }
 
-    public static String getAnomalyDetectionResultsFilePath(String beginTimeStamp, String endTimeStamp)  {
+    public static void detectAnomalies(String beginTimeStamp, String endTimeStamp)  {
 //        String beginTimeStamp = "2024-07-05T06:22:26.220Z";
 //        String endTimeStamp = "2024-07-05T20:35:51.900Z";
         String beginningPath = Constants.folderPathForInfluxStats;
@@ -96,6 +99,14 @@ public class AnomalyDetection {
 
 
         String resultPath = "AnomalyDetectionResults/AnomalyDetectionResult.txt";
+        File prevFile = new File(resultPath);
+        if (prevFile.exists()) {
+            boolean deleted = prevFile.delete();
+            if (!deleted) {
+                System.out.println("manually delete the \"files\" in AnomalyDetectionResults");
+                System.exit(0);
+            }
+        }
         System.out.println(resultPath);
         int numberOfCores = Runtime.getRuntime().availableProcessors() / 5;
         ExecutorService cpuExecutor = Executors.newFixedThreadPool(numberOfCores);
@@ -146,11 +157,10 @@ public class AnomalyDetection {
         catch (InterruptedException e){
             System.out.println("The file is not yet written and waits for executors were interrupted");
         }
-        return resultPath;
     }
 
     public static void main(String[] Args) {
-//        System.out.println(getAnomalyDetectionResultsFilePath("2024-07-05T06:22:26.220Z","2024-07-05T20:35:51.900Z"));
-        System.out.println(getAnomalyDetectionResultsFilePath("2024-07-05T06:22:26.220Z","2024-07-05T15:38:00.000Z"));
+        detectAnomalies("2024-07-05T06:22:26.220Z","2024-07-05T20:35:51.900Z");
+//        detectAnomalies("2024-07-05T06:22:26.220Z","2024-07-05T15:38:00.000Z");
     }
 }
