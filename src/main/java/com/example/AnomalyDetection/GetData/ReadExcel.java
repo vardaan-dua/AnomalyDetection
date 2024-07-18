@@ -1,7 +1,6 @@
 package com.example.AnomalyDetection.GetData;
 
 
-
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -9,22 +8,18 @@ import java.io.*;
 import java.util.*;
 
 public class ReadExcel {
-    private static String formatDouble(double value, int decimalPlaces) {
-        return String.format("%." + decimalPlaces + "f", value);
-    }
-    public static List<String[]> getData (String path , int keepRowsWithTheseNumberOfCells) {
+    public static List<String[]> getData(String path, int keepRowsWithTheseNumberOfCells) {
 
         List<String[]> data = new ArrayList<>();
         try {
             FileInputStream file = new FileInputStream(new File(path));
             Workbook workbook = new XSSFWorkbook(file);
             Sheet sheet = workbook.getSheetAt(0);
-            int rowNumber = 0;
-            boolean isFirstRow =true;
+            boolean isFirstRow = true;
             for (Row row : sheet) {
-                if(!isFirstRow) {
+                if (!isFirstRow) {
                     int count = 0;
-                    for (Cell cell : row) {
+                    for (Cell ignored : row) {
                         count++;
                     }
                     if (count != keepRowsWithTheseNumberOfCells) continue;
@@ -45,20 +40,16 @@ public class ReadExcel {
                                 break;
                             }
                             default:
-                                System.out.println("gadbad\n");
+                                System.out.println("Excel sheet is in wrong format");
                         }
                     }
                     data.add(cur);
-                    rowNumber++;
-                }
-                else isFirstRow = false;
+                } else isFirstRow = false;
 
             }
             return data;
-        }
-        catch(Exception e)
-        {
-            System.out.println("fat gaya oyeee");
+        } catch (Exception e) {
+            System.out.println("Errors while reading the excel sheet");
             return data;
         }
     }

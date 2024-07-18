@@ -41,6 +41,9 @@ dependencies {
 	implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 	implementation 'org.json:json:20210307'
 	implementation group: 'org.springframework', name: 'spring-webmvc', version: '6.1.8'
+	implementation 'org.apache.kafka:kafka-clients:3.7.1'
+	implementation 'org.apache.kafka:kafka-clients:3.7.1'
+	implementation 'org.apache.kafka:kafka-streams:3.7.1'
 
 }
 

@@ -93,7 +93,7 @@ public class AnomalyDetection {
         List<String> times = AnomalousTimeRangeDetector.getAnomalousTimeRanges(beginningPath, statPath, beginTimeStamp, endTimeStamp);
 
 
-        String resultPath = "AnomalyDetectionResults/AnomalyDetectionResult.txt";
+        String resultPath = "AnomalyDetectionResults/";
         System.out.println(resultPath);
         int numberOfCores = Runtime.getRuntime().availableProcessors() / 5;
         ExecutorService cpuExecutor = Executors.newFixedThreadPool(numberOfCores);

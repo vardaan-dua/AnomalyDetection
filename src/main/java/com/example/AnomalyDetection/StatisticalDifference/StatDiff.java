@@ -8,7 +8,6 @@ import com.example.AnomalyDetection.GetData.ReadExcel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
 
 
@@ -52,17 +51,17 @@ public class StatDiff {
         return new double[]{num1,num2};
     }
 
-    public static TreeMap<String,double[]> getStatDiff(String timeRangeBeg1 , String timeRangeBeg2 , int durationInMinutes, TreeMap<String,String> paramPath){
+    public static TreeMap<String,double[]> getStatDiff(String folderPath , String timeRangeBeg1 , String timeRangeBeg2 , int durationInMinutes, TreeMap<String,String> paramPath){
         String timeRangeEnd1 = CommonFunctions.addMinutes(timeRangeBeg1,durationInMinutes);
         String timeRangeEnd2 = CommonFunctions.addMinutes(timeRangeBeg2,durationInMinutes);
-        return getStatDiff(timeRangeBeg1,timeRangeEnd1,timeRangeBeg2,timeRangeEnd2,paramPath);
+        return getStatDiff(folderPath,timeRangeBeg1,timeRangeEnd1,timeRangeBeg2,timeRangeEnd2,paramPath);
     }
-    public static TreeMap<String,double[]> getStatDiff(String timeRangeBeg1 , String timeRangeEnd1 , String timeRangeBeg2,String timeRangeEnd2, TreeMap<String,String> paramPath){
+    public static TreeMap<String,double[]> getStatDiff(String folderPath , String timeRangeBeg1 , String timeRangeEnd1 , String timeRangeBeg2,String timeRangeEnd2, TreeMap<String,String> paramPath){
         TreeMap<String,double[]> result = new TreeMap<>();
         for(var entry : paramPath.entrySet()){
             String param = entry.getKey();
             String path = entry.getValue();
-            List<String[]> tempData = ReadExcel.getData(path,2);
+            List<String[]> tempData = ReadExcel.getData(folderPath+"/"+path,2);
             double[] values1 = getData(tempData,timeRangeBeg1,timeRangeEnd1);
             double[] values2 = getData(tempData,timeRangeBeg2,timeRangeEnd2);
             double[] res = {mean(values1),mean(values2),stdev(values1),stdev(values2)};

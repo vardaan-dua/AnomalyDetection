@@ -8,45 +8,47 @@ import org.apache.commons.math3.distribution.TDistribution;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class AnomalyDetectionAlgorithm {
-    public static List<String> getAnomalousTimeRangesWRTStatistic(String path , String beginTimeStamp , String endTimeStamp){
-        final int numFields = 2;
+    public static List<String> getAnomalousTimeRangesWRTStatistic(String path, String beginTimeStamp, String endTimeStamp) {
         final double significanceLevel = 0.99;
-        List<String[]> dataTemp= ReadExcel.getData(path,2);
+        List<String[]> dataTemp = ReadExcel.getData(path, 2);
         List<String[]> data = new ArrayList<>();
         for (String[] strings : dataTemp) {
             String currentDate = strings[0];
-            if (CommonFunctions.compareDates(CommonFunctions.convertDate(currentDate), beginTimeStamp) >= 0 && CommonFunctions.compareDates(endTimeStamp, CommonFunctions.convertDate(currentDate)) >= 0)
+            String convertedDate = CommonFunctions.convertDate(currentDate);
+            assert convertedDate != null;
+            if (CommonFunctions.compareDates(convertedDate, beginTimeStamp) >= 0 && CommonFunctions.compareDates(endTimeStamp, convertedDate) >= 0)
                 data.add(strings);
         }
-        int n = data.size();
-        double[] values = new double[n];
-        for(int i =0;i< n;++i){
+        int dataSize = data.size();
+        double[] values = new double[dataSize];
+        for (int i = 0; i < dataSize; ++i) {
             values[i] = Double.parseDouble(data.get(i)[1]);
         }
-        double mean =0 ;
-        for(int i =0 ;i<n;++i){
-            mean+=values[i];
+        double mean = 0;
+        for (int i = 0; i < dataSize; ++i) {
+            mean += values[i];
         }
-        mean /= n;
-        double sampleStdev =0 ;
-        for(int i =0 ;i<n;++i){
-            sampleStdev+=(values[i]-mean)*(values[i]-mean);
+        mean /= dataSize;
+        double sampleStdev = 0;
+        for (int i = 0; i < dataSize; ++i) {
+            sampleStdev += (values[i] - mean) * (values[i] - mean);
         }
-        sampleStdev/= (n-1);
+        sampleStdev /= (dataSize - 1);
         sampleStdev = Math.sqrt(sampleStdev);
-        double[] zscore = new double[n];
-        for(int i =0 ;i<n;++i){
-            zscore[i] = Math.abs(values[i]-mean)/sampleStdev;
+        double[] zscore = new double[dataSize];
+        for (int i = 0; i < dataSize; ++i) {
+            zscore[i] = Math.abs(values[i] - mean) / sampleStdev;
         }
 
-        double degreesOfFreedom = n-2;
+        double degreesOfFreedom = dataSize - 2;
         TDistribution tDistribution = new TDistribution(degreesOfFreedom);
-        double  tdist = tDistribution.inverseCumulativeProbability(significanceLevel);
-        double thresh = ((n-1)/Math.sqrt(n))*(Math.sqrt(tdist*tdist/(n-2+tdist*tdist)));
-        List<String> result = new ArrayList<>() ;
-        for(int i =0 ;i<n;++i) {
-            if (zscore[i] > thresh ) {
+        double tdist = tDistribution.inverseCumulativeProbability(significanceLevel);
+        double thresh = ((dataSize - 1) / Math.sqrt(dataSize)) * (Math.sqrt(tdist * tdist / (dataSize - 2 + tdist * tdist)));
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < dataSize; ++i) {
+            if (zscore[i] > thresh) {
                 result.add(data.get(i)[0]);
             }
         }

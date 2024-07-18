@@ -1,19 +1,15 @@
 package com.example.AnomalyDetection.AnomalyDetector;
 
 
-
 import com.example.AnomalyDetection.CommonFunctions;
 import com.example.AnomalyDetection.Constants;
 import com.example.AnomalyDetection.Filter.Filters;
 import com.example.AnomalyDetection.GetData.ReadExcel;
 import com.example.AnomalyDetection.ML.Clustering;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.SQLOutput;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -51,25 +47,26 @@ public class AnomalyDetection {
             System.out.println(clusteringData.size());
             result.add("\n");
             result.add("Patterns for " + timeRangeBegin + " " + timeRangeEnd + "\n");
-            int count = 20;
+            int maxNumberOfPatterns = 20;
             for (String[] str : clusteringData) {
                 result.add(str[1] + " appeared " + str[2] + " times\n");
-                count--;
-                if (count == 0) break;
+                maxNumberOfPatterns--;
+                if (maxNumberOfPatterns == 0) break;
             }
             List<String[]> logsInGivenTime = Filters.filterOnTimeStamp(logs, timeRangeBegin, timeRangeEnd);
-            HashMap<String, HashSet<String>> pattern_Logs = new HashMap<>();
+            HashMap<String, HashSet<String>> patternAndLogs = new HashMap<>();
             for (String reg : regex)
-                pattern_Logs.put(reg, new HashSet<>());
+                patternAndLogs.put(reg, new HashSet<>());
             System.out.println(logsInGivenTime.size());
             for (String[] row : logsInGivenTime) {
-                for (int i = 0; i < regex.length; ++i) {
-                    if ((row[2].toLowerCase()).contains(regex[i].toLowerCase())) {
-                        pattern_Logs.get(regex[i]).add(row[2]);
+                String cureRowLog = row[2].toLowerCase();
+                for (String expression : regex) {
+                    if (cureRowLog.contains(expression.toLowerCase())) {
+                        patternAndLogs.get(expression).add(cureRowLog);
                     }
                 }
             }
-            for (Map.Entry<String, HashSet<String>> entry : pattern_Logs.entrySet()) {
+            for (Map.Entry<String, HashSet<String>> entry : patternAndLogs.entrySet()) {
                 if (entry.getValue().isEmpty()) continue;
                 result.add("\n");
                 result.add("Logs Matching to the Pattern: " + entry.getKey() + "\n");
@@ -80,34 +77,34 @@ public class AnomalyDetection {
             }
         } catch (Exception e) {
             System.out.println("couldn't cluster the data");
+            e.printStackTrace();
         }
         System.out.println(timeRangeBegin);
         System.out.println(timeRangeEnd);
         return result;
     }
 
-    public static void detectAnomalies(String beginTimeStamp, String endTimeStamp)  {
-//        String beginTimeStamp = "2024-07-05T06:22:26.220Z";
-//        String endTimeStamp = "2024-07-05T20:35:51.900Z";
+    public static void detectAnomalies(String resultFolderPath, String beginTimeStamp, String endTimeStamp) {
         String beginningPath = Constants.folderPathForInfluxStats;
         TreeMap<String, String> statPath = new TreeMap<>();
         statPath.put("POD_CPU_USAGE", Constants.podCpuUsageDataPath);
         statPath.put("POD_MEMORY_USAGE", Constants.podMemoryUsageDataPath);
         statPath.put("TOMCAT_THREADS", Constants.tomCatThreadsDataPath);
         statPath.put("GRPC_THREADS", Constants.grpcThreadsDataPath);
-        List<String> times = AnomalousTimeRangeDetector.getAnomalousTimeRanges(beginningPath, statPath, beginTimeStamp, endTimeStamp);
-
-
-        String resultPath = "AnomalyDetectionResults/AnomalyDetectionResult.txt";
-        File prevFile = new File(resultPath);
-        if (prevFile.exists()) {
-            boolean deleted = prevFile.delete();
-            if (!deleted) {
-                System.out.println("manually delete the \"files\" in AnomalyDetectionResults");
-                System.exit(0);
-            }
+        System.out.println(resultFolderPath);
+        File folder = new File(resultFolderPath);
+        if (folder.exists()) {
+            CommonFunctions.deleteFolder(folder);
         }
-        System.out.println(resultPath);
+        if (folder.mkdir()) {
+            System.out.println("Folder created successfully: " + folder.getAbsolutePath());
+        } else {
+            System.err.println("Failed to create folder: " + folder.getAbsolutePath());
+        }
+
+        List<String> times = AnomalousTimeRangeDetector.getAnomalousTimeRanges(resultFolderPath, beginningPath, statPath, beginTimeStamp, endTimeStamp);
+
+
         int numberOfCores = Runtime.getRuntime().availableProcessors() / 5;
         ExecutorService cpuExecutor = Executors.newFixedThreadPool(numberOfCores);
 
@@ -133,14 +130,14 @@ public class AnomalyDetection {
             try {
                 while (count > 0) {
                     List<String> result = resultQueue.take();
-                    try (BufferedWriter bfw = new BufferedWriter(new FileWriter(resultPath, true))) {
+                    try (BufferedWriter bfw = new BufferedWriter(new FileWriter(resultFolderPath + "/AnomalyDetectionResults.txt", true))) {
                         bfw.newLine();
-                        for (String str : result) {
-                            bfw.write(str);
+                        for (String row : result) {
+                            bfw.write(row);
                         }
                         bfw.newLine();
                     } catch (IOException e) {
-                        System.out.println("error while writing to the file");
+                        System.out.println("error while writing to AnomalyDetectionResults");
                     }
                     count--;
                 }
@@ -153,14 +150,9 @@ public class AnomalyDetection {
         try {
             cpuExecutor.awaitTermination(30, TimeUnit.MINUTES);
             resultProcessor.awaitTermination(30, TimeUnit.MINUTES);
-        }
-        catch (InterruptedException e){
+        } catch (InterruptedException e) {
             System.out.println("The file is not yet written and waits for executors were interrupted");
         }
     }
 
-    public static void main(String[] Args) {
-        detectAnomalies("2024-07-05T06:22:26.220Z","2024-07-05T20:35:51.900Z");
-//        detectAnomalies("2024-07-05T06:22:26.220Z","2024-07-05T15:38:00.000Z");
-    }
 }
